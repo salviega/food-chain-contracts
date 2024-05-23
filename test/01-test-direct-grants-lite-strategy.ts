@@ -22,10 +22,10 @@ interface Accounts {
 }
 
 interface Contracts {
-	daiMock: any
+	cUSDMock: any
 	registryInstance: any
 	alloInstance: any
-	qVSimpleStrategyContract: any
+	directGrantsLiteStrategy: any
 }
 
 interface Metadata {
@@ -52,13 +52,10 @@ interface Pool {
 }
 
 interface InitializeData {
-	registryGating: boolean
+	useRegistryAnchor: boolean
 	metadataRequired: boolean
-	reviewThreshold: number
 	registrationStartTime: number
 	registrationEndTime: number
-	allocationStartTime: number
-	allocationEndTime: number
 }
 
 interface RecipientData {
@@ -70,10 +67,7 @@ interface RecipientData {
 interface Recipient {
 	useRegistryAnchor: boolean
 	recipientAddress: string
-	grantAmount: bigint
 	metadata: Metadata
-	recipientStatus: number
-	milestonesReviewStatus: number
 }
 
 interface Milestone {
@@ -82,7 +76,7 @@ interface Milestone {
 	status: bigint
 }
 
-describe('Cuadratic Sciencie Flow', async function () {
+describe('Direct Grants Lite Strategy Flow', async function () {
 	function toDecimal(value: number): bigint {
 		return BigInt(value * 10 ** 18)
 	}
@@ -97,8 +91,7 @@ describe('Cuadratic Sciencie Flow', async function () {
 	const abiCoder = new ethers.AbiCoder()
 
 	const initializeDataStructTypes: string[] = [
-		'uint256',
-		'tuple(bool, bool, uint256, uint64, uint64, uint64, uint64)'
+		'tuple(bool, bool, uint64, uint64)'
 	]
 	const recipientDataStructTypes = [
 		'address',
@@ -106,7 +99,7 @@ describe('Cuadratic Sciencie Flow', async function () {
 		'tuple(uint256, string)'
 	]
 	const metadataStructTypes: string[] = ['uint256', 'string']
-	const allocateStructTypes: string[] = ['address', 'uint256']
+	const allocateStructTypes: string[] = ['address', 'address', 'uint256']
 
 	const nowTime: Date = new Date()
 
@@ -144,16 +137,16 @@ describe('Cuadratic Sciencie Flow', async function () {
 		// Arrange
 		const { alice, bob, kyle } = accounts
 		const {
-			daiMock,
+			cUSDMock,
 			registryInstance,
 			alloInstance,
-			qVSimpleStrategyContract
+			directGrantsLiteStrategy
 		} = contracts
 
-		const daiMockAddress: string = await daiMock.getAddress()
+		const cUSDMockAddress: string = await cUSDMock.getAddress()
 
-		const qVSimpleStrategyAddress: string =
-			await qVSimpleStrategyContract.getAddress()
+		const directGrantsLiteStrategyAddress: string =
+			await directGrantsLiteStrategy.getAddress()
 
 		const aliceNonce: number = await ethers.provider.getTransactionCount(
 			alice.address
@@ -173,25 +166,18 @@ describe('Cuadratic Sciencie Flow', async function () {
 		const alicePoolManagers: string[] = []
 
 		const alicePoolInitStrategyDataObject: InitializeData = {
-			registryGating: false,
-			metadataRequired: true,
-			reviewThreshold: reviewThresholdTimestamp,
+			useRegistryAnchor: true,
+			metadataRequired: false,
 			registrationStartTime: registrationStartTimestamp,
-			registrationEndTime: registrationEndTimestamp,
-			allocationStartTime: allocationStartTimestamp,
-			allocationEndTime: allocationEndTimestamp
+			registrationEndTime: registrationEndTimestamp
 		}
 
 		const aliceInitStrategyDataValues: any[] = [
-			MaxUint256,
 			[
-				alicePoolInitStrategyDataObject.registryGating,
+				alicePoolInitStrategyDataObject.useRegistryAnchor,
 				alicePoolInitStrategyDataObject.metadataRequired,
-				alicePoolInitStrategyDataObject.reviewThreshold,
 				alicePoolInitStrategyDataObject.registrationStartTime,
-				alicePoolInitStrategyDataObject.registrationEndTime,
-				alicePoolInitStrategyDataObject.allocationStartTime,
-				alicePoolInitStrategyDataObject.allocationEndTime
+				alicePoolInitStrategyDataObject.registrationEndTime
 			]
 		]
 
@@ -201,8 +187,8 @@ describe('Cuadratic Sciencie Flow', async function () {
 		)
 
 		const bobData: RecipientData = {
-			recipientId: bob.address,
-			recipientAddress: ZeroAddress,
+			recipientId: ZeroAddress,
+			recipientAddress: bob.address,
 			metadata: {
 				protocol: BigInt(1),
 				pointer: 'ipfs://QmQmQmQmQmQmQmQmQmQmQmQmQm'
@@ -287,52 +273,30 @@ describe('Cuadratic Sciencie Flow', async function () {
 			anchor: aliceProfileDto[5]
 		}
 
-		bobData.recipientAddress = aliceProfile.anchor
-		// bobDataArray[1] = aliceProfile.anchor
+		bobData.recipientId = aliceProfile.anchor
+		bobDataArray[0] = aliceProfile.anchor
 		bobDataBytes = abiCoder.encode(recipientDataStructTypes, bobDataArray)
-
-		// Add strategy to cloneable strategies
-		// console.log(' 🚩  2. Add strategy to cloneable strategies')
-		// const addToCloneableStrategiesTx = await alloInstance
-		// 	.connect(admin)
-		// 	.addToCloneableStrategies(qVSimpleStrategyAddress)
-
-		// await addToCloneableStrategiesTx.wait()
-
-		// transactionReceipt = await ethers.provider.getTransactionReceipt(
-		// 	addToCloneableStrategiesTx.hash
-		// )
-		// transactionBlockNumber = transactionReceipt.blockNumber
-
-		// events = await alloInstance.queryFilter(
-		// 	'StrategyApproved',
-		// 	transactionBlockNumber
-		// )
-
-		// event = events[events.length - 1]
-
-		// strategyAddress = event.args.strategy
 
 		// Create pool
 		console.log(' 🚩  3. Create pool')
 
-		const mintTx = await daiMock.connect(alice).mint(toDecimal(1000))
+		const mintTx = await cUSDMock.connect(alice).mint(toDecimal(1000))
 		await mintTx.wait()
 
-		const approveTx = await daiMock
+		const approveTx = await cUSDMock
 			.connect(alice)
 			.approve(await alloInstance.getAddress(), toDecimal(1000))
 		await approveTx.wait()
 
-		const aliceBalanceBefore = await daiMock.balanceOf(alice.address)
+		const aliceBalanceBefore = await cUSDMock.balanceOf(alice.address)
 
 		const createPoolTx = await alloInstance
 			.connect(alice)
 			.createPoolWithCustomStrategy(
 				aliceProfileId, // _profileId
-				qVSimpleStrategyAddress, // _strategy
+				directGrantsLiteStrategyAddress, // _strategy
 				aliceInitStrategyData, // _initStrategyData
-				daiMockAddress, // _token
+				cUSDMockAddress, // _token
 				poolFundingAmount, // _amount
 				[alicePoolMetadata.protocol, alicePoolMetadata.pointer], // _metadata
 				alicePoolManagers // _managers
@@ -367,11 +331,7 @@ describe('Cuadratic Sciencie Flow', async function () {
 		}
 
 		aliceStrategyContract = await ethers.getContractAt(
-			'QVSimpleStrategy',
-			alicePool.strategy
-		)
-
-		const aliceStrategyContractBalanceBefore = await daiMock.balanceOf(
+			'DirectGrantsLiteStrategy',
 			alicePool.strategy
 		)
 
@@ -389,7 +349,7 @@ describe('Cuadratic Sciencie Flow', async function () {
 		// 4. Add recipient
 		console.log(' 🚩  4. Add recipient')
 		const addRecipientTx = await alloInstance
-			.connect(bob)
+			.connect(alice)
 			.registerRecipient(alicePoolId, bobDataBytes)
 
 		await addRecipientTx.wait()
@@ -408,58 +368,62 @@ describe('Cuadratic Sciencie Flow', async function () {
 
 		bobRecipientId = event.args.recipientId
 
-		const bobRecipientDto: any[] = await aliceStrategyContract.getRecipient(
-			bobRecipientId
+		// 5. Set recipient status to Accepted reviewRecipients()
+		console.log(' 🚩  5. Set recipient status to Accepted')
+
+		const applicationStatusArray = [
+			{ index: 0, statusRow: 2 } // 2 corresponds to 'accepted'
+		]
+
+		const recipientsCounter: bigint =
+			await aliceStrategyContract.recipientsCounter()
+
+		const setReviewRecipientsTx = await aliceStrategyContract
+			.connect(alice)
+			.reviewRecipients(applicationStatusArray, recipientsCounter)
+
+		await setReviewRecipientsTx.wait()
+
+		transactionReceipt = await ethers.provider.getTransactionReceipt(
+			setReviewRecipientsTx.hash
+		)
+		transactionBlockNumber = transactionReceipt.blockNumber
+
+		events = await aliceStrategyContract.queryFilter(
+			'RecipientStatusUpdated',
+			transactionBlockNumber
 		)
 
-		console.table(bobRecipientDto)
+		event = events[events.length - 1]
+
+		const bobRecipientDto = await aliceStrategyContract.getRecipient(
+			bobRecipientId
+		)
 
 		bobRecipient = {
 			useRegistryAnchor: bobRecipientDto[0],
 			recipientAddress: bobRecipientDto[1],
-			grantAmount: bobRecipientDto[2],
 			metadata: {
-				protocol: bobRecipientDto[3][0],
-				pointer: bobRecipientDto[3][1]
-			},
-			recipientStatus: bobRecipientDto[4],
-			milestonesReviewStatus: bobRecipientDto[5]
+				protocol: bobRecipientDto[2][0],
+				pointer: bobRecipientDto[2][1]
+			}
 		}
-
-		// 5. Set recipient status to inReview reviewRecipients()
-		// console.log(' 🚩  5. Set recipient status to inReview')
-
-		// const setReviewRecipientsTx = await aliceStrategyContract
-		// 	.connect(alice)
-		// 	.reviewRecipients([bobRecipientId], [5])
-
-		// await setReviewRecipientsTx.wait()
-
-		// transactionReceipt = await ethers.provider.getTransactionReceipt(
-		// 	setReviewRecipientsTx.hash
-		// )
-		// transactionBlockNumber = transactionReceipt.blockNumber
-
-		// events = await aliceStrategyContract.queryFilter(
-		// 	'RecipientStatusUpdated',
-		// 	transactionBlockNumber
-		// )
-
-		// event = events[events.length - 1]
-
-		// let recipientStatusChangedStatus: bigint = event.args.status
-
-		bobRecipientStatus = await aliceStrategyContract.getRecipientStatus(
-			bobRecipientId
-		)
 
 		// 6. Fund pool
 		console.log(' 🚩  6. Fund pool')
 
-		const mintTx2 = await daiMock.connect(kyle).mint(toDecimal(2000))
+		const mintTx1 = await cUSDMock.connect(alice).mint(toDecimal(2000))
+		await mintTx1.wait()
+
+		const approveTx1 = await cUSDMock
+			.connect(alice)
+			.approve(await aliceStrategyContract, toDecimal(2000))
+		await approveTx1.wait()
+
+		const mintTx2 = await cUSDMock.connect(kyle).mint(toDecimal(2000))
 		await mintTx2.wait()
 
-		const approveTx2 = await daiMock
+		const approveTx2 = await cUSDMock
 			.connect(kyle)
 			.approve(await alloInstance.getAddress(), toDecimal(2000))
 		await approveTx2.wait()
@@ -497,18 +461,19 @@ describe('Cuadratic Sciencie Flow', async function () {
 		timeToMoveForward += 60
 		await moveTime(timeToMoveForward)
 
-		const voiceCredits: number = toNumber(poolFundedAmount)
-
-		const kyleAllocateDataArray: any[] = [bobRecipientId, 1]
-
-		const kyleAllocateDataBytes: BytesLike = abiCoder.encode(
-			allocateStructTypes,
-			kyleAllocateDataArray
+		const bobAllocateDataArray: any[] = [
+			cUSDMockAddress,
+			bobRecipientId,
+			poolFundedAmount
+		]
+		const bobAllocateDataBytes = abiCoder.encode(
+			[`tuple(${allocateStructTypes.join(',')})[]`],
+			[[bobAllocateDataArray]]
 		)
 
 		const allocateFundsTx = await alloInstance
-			.connect(kyle)
-			.allocate(alicePoolId, kyleAllocateDataBytes)
+			.connect(alice)
+			.allocate(alicePoolId, bobAllocateDataBytes)
 
 		await allocateFundsTx.wait()
 
@@ -524,76 +489,7 @@ describe('Cuadratic Sciencie Flow', async function () {
 
 		event = events[events.length - 1]
 
-		const allocatedVotes: bigint = event.args.votes
-
-		const allocateFundsTx2 = await alloInstance
-			.connect(kyle)
-			.allocate(alicePoolId, kyleAllocateDataBytes)
-
-		await allocateFundsTx2.wait()
-
-		transactionReceipt = await ethers.provider.getTransactionReceipt(
-			allocateFundsTx.hash
-		)
-		transactionBlockNumber = transactionReceipt.blockNumber
-
-		events = await aliceStrategyContract.queryFilter(
-			'Allocated',
-			transactionBlockNumber
-		)
-
-		event = events[events.length - 1]
-
-		const allocatedVotes2: bigint = event.args.votes
-
-		// 8. Distribute
-		console.log(' 🚩  8. Distribute funds')
-
-		currentBlock = await ethers.provider.getBlock('latest')
-
-		if (!currentBlock) {
-			throw new Error('No current block found')
-		}
-
-		currentTime = currentBlock.timestamp
-		timeToMoveForward = allocationEndTimestamp - currentTime
-		timeToMoveForward += 60
-		await moveTime(timeToMoveForward)
-
-		const bobBalanceBefore = await daiMock.balanceOf(bob.address)
-
-		const distibuteTx = await alloInstance
-			.connect(alice)
-			.distribute(alicePoolId, [bobRecipientId], ethers.encodeBytes32String(''))
-
-		await distibuteTx.wait()
-
-		const bobBalanceAfter = await daiMock.balanceOf(bob.address)
-
-		const aliceBalanceAfter = await daiMock.balanceOf(alice.address)
-
-		const aliceStrategyContractBalanceAfter = await daiMock.balanceOf(
-			await aliceStrategyContract.getAddress()
-		)
-
-		console.table({
-			bobBalanceBefore: toNumber(bobBalanceBefore),
-			bobBalanceAfter: toNumber(bobBalanceAfter),
-			aliceBalanceBefore: toNumber(aliceBalanceBefore),
-			aliceBalanceAfter: toNumber(aliceBalanceAfter),
-			aliceStrategyContractBalanceBefore: toNumber(
-				aliceStrategyContractBalanceBefore
-			),
-			aliceStrategyContractBalanceAfter: toNumber(
-				aliceStrategyContractBalanceAfter
-			)
-		})
-
-		const _bobRecipientDto: any[] = await aliceStrategyContract.getRecipient(
-			bobRecipientId
-		)
-
-		console.table(_bobRecipientDto)
+		const allocatedFunds: bigint = event.args.amount
 	})
 })
 
@@ -602,7 +498,7 @@ async function deployContracts() {
 
 	// Deploy DAIMock contract
 
-	const daiMock = await deployContract('DAIMock', [])
+	const cUSDMock = await deployContract('cUSDMock', [])
 
 	// Deploy Registry contract
 
@@ -638,21 +534,22 @@ async function deployContracts() {
 
 	// Deploy Direct Grants Simple Strategy contract
 
-	const qVSimpleStrategyArgs: any[] = [
+	// Deploy Quadratic Voting Strategy contract
+	const directGrantsLiteStrategyArgs: any[] = [
 		alloInstanceAddress, // _alloAddress
-		'Cuadratic voting simple strategy' // _strategyName
+		'Direct grant strategy' // _strategyName
 	]
-	const qVSimpleStrategyContract = await deployContract(
-		'QVSimpleStrategy',
-		qVSimpleStrategyArgs
+	const directGrantsLiteStrategy = await deployContract(
+		'DirectGrantsLiteStrategy',
+		directGrantsLiteStrategyArgs
 	)
 
 	// Return all deployed contracts
 	return {
-		daiMock,
+		cUSDMock,
 		registryInstance,
 		alloInstance,
-		qVSimpleStrategyContract
+		directGrantsLiteStrategy
 	}
 }
 

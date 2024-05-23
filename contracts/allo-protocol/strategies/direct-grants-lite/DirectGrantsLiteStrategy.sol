@@ -11,6 +11,7 @@ import {BaseStrategy} from '../BaseStrategy.sol';
 import {Metadata} from '../../core/libraries/Metadata.sol';
 import {Native} from '../../core/libraries/Native.sol';
 
+
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 // ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⢿⣿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣗⠀⠀⠀⢸⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -513,8 +514,10 @@ contract DirectGrantsLiteStrategy is Native, BaseStrategy, Multicall {
 
 		for (uint256 i = 0; i < length; ) {
 			Allocation memory allocation = allocations[i];
+
 			address recipientId = allocation.recipientId;
 			Recipient memory recipient = _getRecipient(recipientId);
+
 			address recipientAddress = recipient.recipientAddress;
 
 			address token = allocations[i].token;
@@ -530,6 +533,7 @@ contract DirectGrantsLiteStrategy is Native, BaseStrategy, Multicall {
 			if (_getUintRecipientStatus(recipientId) != uint8(Status.Accepted)) {
 				revert RECIPIENT_NOT_ACCEPTED();
 			}
+
 
 			_transferAmountFrom(
 				token,

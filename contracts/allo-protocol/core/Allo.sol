@@ -171,6 +171,7 @@ contract Allo is
 		if (_isCloneableStrategy(_strategy)) revert IS_APPROVED_STRATEGY();
 
 		// Call the internal '_createPool()' function and return the pool ID
+
 		return
 			_createPool(
 				_profileId,

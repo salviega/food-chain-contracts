@@ -30,9 +30,9 @@ if (!CELO_SCAN_API_KEY) {
 	throw new Error('CELO_SCAN_API_KEY is not set')
 }
 
-// if (!CELO_ALFAJORES_RPC_URL) {
-// 	throw new Error('CELO_ALFAJORES_RPC_URL is not set')
-// }
+if (!CELO_ALFAJORES_RPC_URL) {
+	throw new Error('CELO_ALFAJORES_RPC_URL is not set')
+}
 
 if (!WALLET_PRIVATE_KEY) {
 	throw new Error('WALLET_PRIVATE_KEY is not set')
@@ -110,8 +110,8 @@ const config: CustomHardhatConfig = {
 		alfajores: {
 			accounts: ACCOUNTS,
 			chainId: 44787,
-			// gas: GAS,
-			// gasPrice: GAS_PRICE,
+			gas: GAS,
+			gasPrice: GAS_PRICE,
 			url: CELO_ALFAJORES_RPC_URL || 'https://alfajores-forno.celo-testnet.org'
 		}
 	},

@@ -1,3 +1,4 @@
+import contractsJson from '../deployments/alfajores/deployments.json'
 import verify from '../helper-functions'
 
 import { ContractFactory } from 'ethers'
@@ -10,22 +11,23 @@ async function main() {
 async function deployContracts() {
 	// Deploy Quadratic Voting Strategy contract
 	const qVSimpleStrategyArgs: any[] = [
-		'0xe7dA47ac67F04044F7783D528F11cDb309b5D2e2', // _alloAddress
-		'Cuadratic voting simple strategy' // _strategyName
+		contractsJson.alloInstance.address, // _alloAddress
+		'Direct grant strategy' // _strategyName
 	]
-	const qVSimpleStrategyContract = await deployContract(
-		'QVSimpleStrategy',
+	const DirectGrantsLiteStrategyContract = await deployContract(
+		'DirectGrantsLiteStrategy',
 		qVSimpleStrategyArgs
 	)
-	// await verify(
-	// 	await qVSimpleStrategyContract.getAddress(),
-	// 	qVSimpleStrategyArgs
-	// )
+	await verify(
+		await DirectGrantsLiteStrategyContract.getAddress(),
+		qVSimpleStrategyArgs
+	)
 
 	// Log deployed contracts
 	console.log('\n 📜 Deployed contracts')
 	console.table({
-		qVSimpleStrategyContract: await qVSimpleStrategyContract.getAddress()
+		directGrantsLiteStrategy:
+			await DirectGrantsLiteStrategyContract.getAddress()
 	})
 }
 

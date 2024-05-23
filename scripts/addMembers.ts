@@ -1,4 +1,5 @@
-import contractsJson from '../deployments/rsktestnet/deployments.json'
+import adminJson from '../admin/alfajores/admin.json'
+import contractsJson from '../deployments/alfajores/deployments.json'
 
 import dotenv from 'dotenv'
 import { ethers } from 'ethers'
@@ -6,7 +7,7 @@ import { ethers } from 'ethers'
 dotenv.config()
 
 const {
-	RSK_TESTNET_RPC_URL,
+	CELO_ALFAJORES_RPC_URL,
 	WALLET1_PRIVATE_KEY,
 	WALLET2_PRIVATE_KEY,
 	WALLET3_PRIVATE_KEY,
@@ -17,8 +18,8 @@ const {
 	WALLET8_PRIVATE_KEY
 } = process.env
 
-if (!RSK_TESTNET_RPC_URL) {
-	throw new Error('RSK_TESTNET_RPC_URL is not set')
+if (!CELO_ALFAJORES_RPC_URL) {
+	throw new Error('CELO_ALFAJORES_RPC_URL is not set')
 }
 
 if (!WALLET1_PRIVATE_KEY) {
@@ -53,7 +54,7 @@ if (!WALLET8_PRIVATE_KEY) {
 	throw new Error('WALLET8_PRIVATE_KEY is not set')
 }
 
-const provider = new ethers.JsonRpcProvider(RSK_TESTNET_RPC_URL)
+const provider = new ethers.JsonRpcProvider(CELO_ALFAJORES_RPC_URL)
 const signer = new ethers.Wallet(WALLET1_PRIVATE_KEY, provider)
 
 const registryContract = new ethers.Contract(
@@ -77,7 +78,7 @@ async function addMembers() {
 		console.log('Adding members to the registry... \n')
 
 		const addMemberTx = await registryContract.addMembers(
-			'0xd9cf080ed95e558cfb8bd37a61758a18f7c3bf79221811f810879ac73862e3d8',
+			adminJson.profile.id,
 			recipients
 		)
 		await addMemberTx.wait()
